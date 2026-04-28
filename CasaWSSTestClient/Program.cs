@@ -600,12 +600,15 @@ namespace CasaTunes.TestClient
 
         // ── Output ───────────────────────────────────────────────────────────────
 
+        private const string Version = "1.0.1.260428";
+
         private static void PrintBanner(string url)
         {
             Console.WriteLine();
             Console.WriteLine("╔══════════════════════════════════════════════════╗");
             Console.WriteLine("║         CasaTunes WebSocket Test Client          ║");
             Console.WriteLine("╚══════════════════════════════════════════════════╝");
+            Console.WriteLine($"  Version: {Version}");
             Console.WriteLine($"  Server : {url}");
             Console.WriteLine("  Tip    : Pass a different URL as a command-line arg");
             Console.WriteLine("           e.g. CasaWSSTestClient.exe ws://192.168.1.10:7008");

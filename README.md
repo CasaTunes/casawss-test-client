@@ -139,6 +139,17 @@ Use these commands when `server.get` returns `"mode": "streamer"`.
 |---------|----------------|
 | `get featured <inputId>` | `mediaPlayer.featured.get` |
 
+#### Progress Tracking
+
+The server does **not** send periodic progress events. Instead, the `mediaPlayer.changed` event carries `progress` and `duration` as the authoritative re-sync anchor. Real clients are expected to maintain a local 1-second timer and advance the position themselves. This test client makes no attempt to do that — it simply displays the `progress` value from each `mediaPlayer.changed` event as it arrives.
+
+Rules for a real client implementation:
+- Start incrementing `progress` by 1 each second when `status == 2` (playing) and `progressBar.isAvailable == true`.
+- Stop incrementing and clamp the display at `duration`.
+- For live/streaming sources, `duration` is `-1` and `progressBar.isAvailable` is `false` — do not run the timer.
+- Re-sync `progress`, `duration`, and `status` on every `mediaPlayer.changed` event.
+- After a `mp pos` or `mp jump` command the response already contains the updated position — no event is needed.
+
 #### Media Browsing
 
 | Command | Protocol method |

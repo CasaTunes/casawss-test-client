@@ -53,3 +53,15 @@ All messages sent to the server use:
 { "id": "<incrementing int>", "ns": "<namespace>", "method": "<ns.method>", "params": { ... } }
 ```
 Namespaces: `core`, `server`, `avSwitch`, `mediaPlayer`
+
+### Progress tracking model (protocol v1.5.0)
+
+The server does **not** emit `mediaPlayer.progress` events. Playback position is delivered only via `mediaPlayer.changed`, which fires on real state changes (new track, play/pause/stop, seek). The `progress` and `duration` fields in that event are the re-sync anchor.
+
+Real clients must maintain a local 1-second timer:
+- Tick when `status == 2` (playing) **and** `progressBar.isAvailable == true`.
+- Clamp display at `duration`; stop the timer when reached.
+- Skip the timer entirely when `duration == -1` (live/streaming sources).
+- Reset and re-sync on every `mediaPlayer.changed` event.
+
+This test client does none of that — it just prints each `mediaPlayer.changed` event. If you need to verify progress re-sync behaviour, issue `mp pos` or `mp jump` commands and observe the `progress` value in the response and the next `mediaPlayer.changed` event.

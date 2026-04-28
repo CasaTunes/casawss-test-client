@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(msbuild *)",
+      "Bash(dotnet --version)",
+      "Read(//c/Program Files/Microsoft Visual Studio//**)",
+      "Read(//c/Program Files \\(x86\\)/Microsoft Visual Studio//**)",
+      "Bash(cmd.exe *)",
+      "Bash(powershell.exe *)",
+      "Bash(dotnet build *)"
+    ]
+  }
+}
