@@ -273,6 +273,12 @@ namespace CasaTunes.TestClient
                     else
                         Send(Build("avSwitch", "avSwitch.zone.ungroup", new { zoneId }));
                     break;
+                case "sleep":
+                    if (zoneId == null || valueStr == null) { Display.Error("Usage: zone sleep <zoneId> <seconds>  (0 = power off immediately)"); break; }
+                    int sleepDelay;
+                    if (!int.TryParse(valueStr, out sleepDelay) || sleepDelay < 0) Display.Error("seconds must be a non-negative number.");
+                    else Send(Build("avSwitch", "avSwitch.zone.setSleepTimer", new { zoneId, delay = sleepDelay }));
+                    break;
                 default:
                     Display.Error("Unknown zone sub-command. Type 'help' for list.");
                     break;
@@ -600,7 +606,7 @@ namespace CasaTunes.TestClient
 
         // ── Output ───────────────────────────────────────────────────────────────
 
-        private const string Version = "1.0.1.260428";
+        private const string Version = "1.0.2.260505";
 
         private static void PrintBanner(string url)
         {
@@ -640,6 +646,7 @@ namespace CasaTunes.TestClient
             Console.WriteLine("  zone maxvol  <id> <0-100>        setMaxVolume");
             Console.WriteLine("  zone group   <id> <targetId>     link zone to group");
             Console.WriteLine("  zone ungroup <id>                remove zone from group");
+            Console.WriteLine("  zone sleep   <id> <seconds>      sleep zone (0=power off immediately)");
             Console.WriteLine("  ──────────────────────────────────────────────────────────────────");
             Console.WriteLine("  [Streamer mode only]");
             Console.WriteLine("  stream mute   <id> on|off|toggle avSwitch.stream.setMute");

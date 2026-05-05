@@ -54,6 +54,12 @@ All messages sent to the server use:
 ```
 Namespaces: `core`, `server`, `avSwitch`, `mediaPlayer`
 
+### Protocol v1.6.0 changes (2026-05-05)
+
+- **Zone objects** (`avSwitch.zone.getAll`, `avSwitch.zone.get`, `avSwitch.changed`) now include `"sleepEnabled": bool` — `true` when a sleep timer is active for that zone.
+- **New command** `avSwitch.zone.setSleepTimer { zoneId, delay }` — powers off a zone after `delay` seconds (`0` = immediately). Response: `{ zoneId, power: false, sleepEnabled: true }`.
+- Test client: `zone sleep <id> <seconds>` dispatches this command.
+
 ### Progress tracking model (protocol v1.5.0)
 
 The server does **not** emit `mediaPlayer.progress` events. Playback position is delivered only via `mediaPlayer.changed`, which fires on real state changes (new track, play/pause/stop, seek). The `progress` and `duration` fields in that event are the re-sync anchor.

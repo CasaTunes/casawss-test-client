@@ -83,6 +83,7 @@ Type `help` or `?` at the `>` prompt to display this list at any time.
 | `zone maxvol <id> <0-100>` | `avSwitch.zone.setMaxVolume` |
 | `zone group <id> <targetId>` | `avSwitch.zone.group` |
 | `zone ungroup <id>` | `avSwitch.zone.ungroup` |
+| `zone sleep <id> <seconds>` | `avSwitch.zone.setSleepTimer` (0 = power off immediately) |
 
 ---
 
