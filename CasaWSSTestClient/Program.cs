@@ -87,12 +87,11 @@ namespace CasaTunes.TestClient
                 var line = Console.ReadLine()?.Trim();
                 if (string.IsNullOrEmpty(line)) { Console.Write("> "); continue; }
 
-                // Split into up to 4 parts for commands that need more depth (e.g. mp queue get <id>)
-                var parts = line.Split(new[] { ' ' }, 4, StringSplitOptions.RemoveEmptyEntries);
+                var parts = ParseArgs(line);
                 var cmd   = parts[0].ToLowerInvariant();
-                var arg1  = parts.Length > 1 ? parts[1].Trim() : null;
-                var arg2  = parts.Length > 2 ? parts[2].Trim() : null;
-                var arg3  = parts.Length > 3 ? parts[3].Trim() : null;
+                var arg1  = parts.Length > 1 ? parts[1] : null;
+                var arg2  = parts.Length > 2 ? parts[2] : null;
+                var arg3  = parts.Length > 3 ? parts[3] : null;
 
                 switch (cmd)
                 {
@@ -119,11 +118,11 @@ namespace CasaTunes.TestClient
                         break;
 
                     case "zone":
-                        HandleZone(arg1, Rejoin(arg2, arg3));
+                        HandleZone(arg1, arg2, arg3);
                         break;
 
                     case "stream":
-                        HandleStream(arg1, Rejoin(arg2, arg3));
+                        HandleStream(arg1, arg2, arg3);
                         break;
 
                     case "chime":
@@ -135,7 +134,7 @@ namespace CasaTunes.TestClient
                         break;
 
                     case "mp":
-                        HandleMp(arg1, arg2, arg3);
+                        HandleMp(arg1, arg2, arg3, parts);
                         break;
 
                     case "sub":
@@ -233,12 +232,8 @@ namespace CasaTunes.TestClient
 
         // ── zone ─────────────────────────────────────────────────────────────────
 
-        private static void HandleZone(string subcmd, string rest)
+        private static void HandleZone(string subcmd, string zoneId, string valueStr)
         {
-            var restParts = rest?.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
-            var zoneId    = restParts?.Length > 0 ? restParts[0] : null;
-            var valueStr  = restParts?.Length > 1 ? restParts[1] : null;
-
             switch (subcmd?.ToLowerInvariant())
             {
                 case "power":
@@ -368,12 +363,8 @@ namespace CasaTunes.TestClient
 
         // ── stream ───────────────────────────────────────────────────────────────
 
-        private static void HandleStream(string subcmd, string rest)
+        private static void HandleStream(string subcmd, string streamId, string valueStr)
         {
-            var restParts = rest?.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
-            var streamId  = restParts?.Length > 0 ? restParts[0] : null;
-            var valueStr  = restParts?.Length > 1 ? restParts[1] : null;
-
             switch (subcmd?.ToLowerInvariant())
             {
                 case "mute":
@@ -410,7 +401,7 @@ namespace CasaTunes.TestClient
 
         // ── mp ───────────────────────────────────────────────────────────────────
 
-        private static void HandleMp(string subcmd, string arg2, string arg3)
+        private static void HandleMp(string subcmd, string arg2, string arg3, string[] parts)
         {
             switch (subcmd?.ToLowerInvariant())
             {
@@ -469,7 +460,7 @@ namespace CasaTunes.TestClient
 
                 // ── Queue ─────────────────────────────────────────────────────────
                 case "queue":
-                    HandleMpQueue(arg2, arg3);
+                    HandleMpQueue(arg2, arg3, parts.Length > 4 ? parts[4] : null);
                     break;
 
                 // ── Browse ────────────────────────────────────────────────────────
@@ -503,7 +494,7 @@ namespace CasaTunes.TestClient
                     break;
 
                 case "form":
-                    HandleMpForm(arg2, arg3);
+                    HandleMpForm(arg2, parts, 3);
                     break;
 
                 default:
@@ -536,12 +527,8 @@ namespace CasaTunes.TestClient
             Send(Build("mediaPlayer", method, new { inputId }));
         }
 
-        private static void HandleMpQueue(string subcmd, string rest)
+        private static void HandleMpQueue(string subcmd, string inputId, string valueStr)
         {
-            var restParts = rest?.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
-            var inputId   = restParts?.Length > 0 ? restParts[0] : null;
-            var valueStr  = restParts?.Length > 1 ? restParts[1] : null;
-
             switch (subcmd?.ToLowerInvariant())
             {
                 case "get":
@@ -583,7 +570,7 @@ namespace CasaTunes.TestClient
             }
         }
 
-        private static void HandleMpForm(string buttonId, string fieldArgs)
+        private static void HandleMpForm(string buttonId, string[] parts, int fieldStart)
         {
             if (string.IsNullOrEmpty(buttonId))
             {
@@ -591,22 +578,20 @@ namespace CasaTunes.TestClient
                 return;
             }
             var fields = new JArray();
-            if (!string.IsNullOrEmpty(fieldArgs))
+            for (var fi = fieldStart; fi < parts.Length; fi++)
             {
-                foreach (var pair in fieldArgs.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                var pair = parts[fi];
+                var eq = pair.IndexOf('=');
+                if (eq < 1)
                 {
-                    var eq = pair.IndexOf('=');
-                    if (eq < 1)
-                    {
-                        Display.Error($"Invalid field '{pair}' — expected key=value.");
-                        return;
-                    }
-                    fields.Add(new JObject
-                    {
-                        ["key"]   = pair.Substring(0, eq),
-                        ["value"] = pair.Substring(eq + 1)
-                    });
+                    Display.Error($"Invalid field '{pair}' — expected key=value.");
+                    return;
                 }
+                fields.Add(new JObject
+                {
+                    ["key"]   = pair.Substring(0, eq),
+                    ["value"] = pair.Substring(eq + 1)
+                });
             }
             var obj = new JObject
             {
@@ -651,6 +636,32 @@ namespace CasaTunes.TestClient
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────────
+
+        private static string[] ParseArgs(string line)
+        {
+            var tokens = new System.Collections.Generic.List<string>();
+            int i = 0;
+            while (i < line.Length)
+            {
+                while (i < line.Length && line[i] == ' ') i++;
+                if (i >= line.Length) break;
+                var sb = new System.Text.StringBuilder();
+                if (line[i] == '"')
+                {
+                    i++;
+                    while (i < line.Length && line[i] != '"')
+                        sb.Append(line[i++]);
+                    if (i < line.Length) i++;
+                }
+                else
+                {
+                    while (i < line.Length && line[i] != ' ')
+                        sb.Append(line[i++]);
+                }
+                tokens.Add(sb.ToString());
+            }
+            return tokens.ToArray();
+        }
 
         private static string Rejoin(string a, string b)
         {
