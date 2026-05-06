@@ -52,11 +52,18 @@ namespace CasaTunes.TestClient
         {
             Display.Message(json);
 
-            if (_initialized) return;
-
             try
             {
                 var obj = JObject.Parse(json);
+
+                if ((string)obj["event"] == "core.ping")
+                {
+                    Send(Build("core", "core.pong"));
+                    return;
+                }
+
+                if (_initialized) return;
+
                 if ((string)obj["method"] == "core.init" && obj["result"] != null && obj["error"] == null)
                 {
                     _initialized = true;
