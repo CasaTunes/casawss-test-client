@@ -119,6 +119,14 @@ namespace CasaTunes.TestClient
                         HandleStream(arg1, Rejoin(arg2, arg3));
                         break;
 
+                    case "chime":
+                        HandleChime(arg1, arg2, arg3);
+                        break;
+
+                    case "tts":
+                        HandleTts(arg1, arg2, arg3);
+                        break;
+
                     case "mp":
                         HandleMp(arg1, arg2, arg3);
                         break;
@@ -207,8 +215,11 @@ namespace CasaTunes.TestClient
                 case "tasks":
                     Send(Build("server", "server.tasks.get"));
                     break;
+                case "chimes":
+                    Send(Build("server", "server.chimes.get"));
+                    break;
                 default:
-                    Display.Error("Usage: get server|zones|zone <id>|streams|stream <id>|np [id]|queue <id>|featured <id>|tasks");
+                    Display.Error("Usage: get server|zones|zone <id>|streams|stream <id>|np [id]|queue <id>|featured <id>|tasks|chimes");
                     break;
             }
         }
@@ -283,6 +294,69 @@ namespace CasaTunes.TestClient
                     Display.Error("Unknown zone sub-command. Type 'help' for list.");
                     break;
             }
+        }
+
+        // ── chime ────────────────────────────────────────────────────────────────
+
+        private static void HandleChime(string arg1, string arg2, string arg3)
+        {
+            // chime                       → default chime, all paging rooms
+            // chime <chimeName>           → named chime, all paging rooms   (arg1 non-numeric)
+            // chime <zoneId>              → default chime, specific zone     (arg1 numeric)
+            // chime <zoneId> <chimeName>  → named chime, specific zone
+            string zoneId = null;
+            string chime  = null;
+
+            if (!string.IsNullOrEmpty(arg1))
+            {
+                int n;
+                if (int.TryParse(arg1, out n))
+                {
+                    zoneId = arg1;
+                    if (!string.IsNullOrEmpty(arg2)) chime = arg2;
+                }
+                else
+                {
+                    chime = arg1;
+                }
+            }
+
+            var p = new JObject();
+            if (zoneId != null) p["zoneId"] = zoneId;
+            if (chime  != null) p["chime"]  = chime;
+
+            Send(Build("server", "server.chimes.play", p.Count > 0 ? (object)p : null));
+        }
+
+        // ── tts ──────────────────────────────────────────────────────────────────
+
+        private static void HandleTts(string arg1, string arg2, string arg3)
+        {
+            // tts <text>              → all paging rooms (single-word input)
+            // tts <zoneId> <text...>  → specific zone (arg1=zoneId, rest=input text)
+            if (string.IsNullOrEmpty(arg1))
+            {
+                Display.Error("Usage: tts <text>  OR  tts <zoneId> <text...>");
+                return;
+            }
+
+            string id;
+            string input;
+            if (!string.IsNullOrEmpty(arg2))
+            {
+                id    = arg1;
+                input = Rejoin(arg2, arg3);
+            }
+            else
+            {
+                id    = null;
+                input = arg1;
+            }
+
+            var p = new JObject { ["input"] = input };
+            if (id != null) p["id"] = id;
+
+            Send(Build("server", "server.tts.play", p));
         }
 
         // ── stream ───────────────────────────────────────────────────────────────
@@ -637,6 +711,13 @@ namespace CasaTunes.TestClient
             Console.WriteLine("  get featured <inputId>           mediaPlayer.featured.get");
             Console.WriteLine("  get tasks                        server.tasks.get");
             Console.WriteLine("  task invoke <taskName|taskId>    server.task.invoke");
+            Console.WriteLine("  get chimes                       server.chimes.get");
+            Console.WriteLine("  chime                            server.chimes.play (default chime, all rooms)");
+            Console.WriteLine("  chime <name>                     server.chimes.play (named chime, all rooms)");
+            Console.WriteLine("  chime <zoneId>                   server.chimes.play (default chime, specific zone)");
+            Console.WriteLine("  chime <zoneId> <name>            server.chimes.play (named chime, specific zone)");
+            Console.WriteLine("  tts <text>                       server.tts.play (all paging rooms)");
+            Console.WriteLine("  tts <zoneId> <text...>           server.tts.play (specific zone; first token = zone id)");
             Console.WriteLine("  ──────────────────────────────────────────────────────────────────");
             Console.WriteLine("  zone power   <id> on|off|toggle");
             Console.WriteLine("  zone mute    <id> on|off|toggle");

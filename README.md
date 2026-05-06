@@ -66,6 +66,13 @@ Type `help` or `?` at the `>` prompt to display this list at any time.
 | `get server` | `server.get` |
 | `get tasks` | `server.tasks.get` |
 | `task invoke <taskName\|taskId>` | `server.task.invoke` |
+| `get chimes` | `server.chimes.get` |
+| `chime` | `server.chimes.play` — default chime, all paging rooms |
+| `chime <name>` | `server.chimes.play` — named chime, all paging rooms |
+| `chime <zoneId>` | `server.chimes.play` — default chime, specific zone |
+| `chime <zoneId> <name>` | `server.chimes.play` — named chime, specific zone |
+| `tts <text>` | `server.tts.play` — TTS in all paging rooms |
+| `tts <zoneId> <text...>` | `server.tts.play` — TTS in specific zone (first token = zone id) |
 
 ---
 
