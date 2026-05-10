@@ -163,9 +163,13 @@ Rules for a real client implementation:
 | Command | Protocol method |
 |---------|----------------|
 | `mp browse <inputId>` | `mediaPlayer.media.getRoot` — browse root for an input |
-| `mp col <mediaId>` | `mediaPlayer.media.getCollection` — open a collection by ID |
+| `mp col <mediaId> [form]` | `mediaPlayer.media.getCollection` — open a collection by ID. Append `form` to enable form processing; without it, login prompts appear as informational items. |
 | `mp search <mediaId> <text>` | `mediaPlayer.media.search` — search within a collection |
 | `mp mplay <inputId> <mediaId>` | `mediaPlayer.media.play` (addToQueue: playNow) |
+| `mp refresh <mediaId>` | `mediaPlayer.media.refresh` — trigger async server-side refresh |
+| `mp delete <mediaId>` | `mediaPlayer.media.delete` — delete a media item or collection |
+| `mp rename <mediaId> <name>` | `mediaPlayer.media.rename` — rename a media item or collection |
+| `mp setfeatured <mediaId> on\|off` | `mediaPlayer.media.setFeatured` — bookmark or un-bookmark an item |
 
 #### Forms
 

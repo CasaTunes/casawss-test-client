@@ -473,9 +473,45 @@ namespace CasaTunes.TestClient
 
                 case "col":
                     if (string.IsNullOrEmpty(arg2))
-                        Display.Error("Usage: mp col <mediaId>");
+                        Display.Error("Usage: mp col <mediaId> [form]");
                     else
-                        Send(Build("mediaPlayer", "mediaPlayer.media.getCollection", new { mediaId = arg2 }));
+                    {
+                        bool enableForm = string.Equals(arg3, "form", StringComparison.OrdinalIgnoreCase);
+                        Send(Build("mediaPlayer", "mediaPlayer.media.getCollection",
+                            new { mediaId = arg2, enableFormProcessing = enableForm }));
+                    }
+                    break;
+
+                case "refresh":
+                    if (string.IsNullOrEmpty(arg2))
+                        Display.Error("Usage: mp refresh <mediaId>");
+                    else
+                        Send(Build("mediaPlayer", "mediaPlayer.media.refresh", new { mediaId = arg2 }));
+                    break;
+
+                case "delete":
+                    if (string.IsNullOrEmpty(arg2))
+                        Display.Error("Usage: mp delete <mediaId>");
+                    else
+                        Send(Build("mediaPlayer", "mediaPlayer.media.delete", new { mediaId = arg2 }));
+                    break;
+
+                case "rename":
+                    if (string.IsNullOrEmpty(arg2) || string.IsNullOrEmpty(arg3))
+                        Display.Error("Usage: mp rename <mediaId> <name>");
+                    else
+                        Send(Build("mediaPlayer", "mediaPlayer.media.rename", new { mediaId = arg2, name = arg3 }));
+                    break;
+
+                case "setfeatured":
+                    if (string.IsNullOrEmpty(arg2) || string.IsNullOrEmpty(arg3))
+                        Display.Error("Usage: mp setfeatured <mediaId> on|off");
+                    else
+                    {
+                        if (arg3 != "on" && arg3 != "off") { Display.Error("featured must be on or off."); break; }
+                        Send(Build("mediaPlayer", "mediaPlayer.media.setFeatured",
+                            new { mediaId = arg2, featured = arg3 == "on" }));
+                    }
                     break;
 
                 case "search":
@@ -772,9 +808,15 @@ namespace CasaTunes.TestClient
             Console.WriteLine("  mp queue play  <inputId> <idx>   mediaPlayer.queue.playItem");
             Console.WriteLine("  mp queue del   <inputId> <idx>   mediaPlayer.queue.deleteItem");
             Console.WriteLine("  mp browse    <inputId>           mediaPlayer.media.getRoot");
-            Console.WriteLine("  mp col       <mediaId>           mediaPlayer.media.getCollection");
+            Console.WriteLine("  mp col       <mediaId> [form]    mediaPlayer.media.getCollection");
+            Console.WriteLine("               Append 'form' to enable form processing (default: off).");
+            Console.WriteLine("               Without 'form', login prompts appear as info items.");
             Console.WriteLine("  mp search    <mediaId> <text>    mediaPlayer.media.search");
             Console.WriteLine("  mp mplay     <inputId> <mediaId> mediaPlayer.media.play (playNow)");
+            Console.WriteLine("  mp refresh   <mediaId>           mediaPlayer.media.refresh");
+            Console.WriteLine("  mp delete    <mediaId>           mediaPlayer.media.delete");
+            Console.WriteLine("  mp rename    <mediaId> <name>    mediaPlayer.media.rename");
+            Console.WriteLine("  mp setfeatured <mediaId> on|off  mediaPlayer.media.setFeatured");
             Console.WriteLine("  mp form      <buttonId> [k=v ..] mediaPlayer.media.submitForm");
             Console.WriteLine("               Include ALL fields from the form response, including");
             Console.WriteLine("               hidden fields (copy their value from the JSON output).");
