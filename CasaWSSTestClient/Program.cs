@@ -466,19 +466,29 @@ namespace CasaTunes.TestClient
                 // ── Browse ────────────────────────────────────────────────────────
                 case "browse":
                     if (string.IsNullOrEmpty(arg2))
-                        Display.Error("Usage: mp browse <inputId>");
+                        Display.Error("Usage: mp browse <inputId> [collectionActions]");
                     else
-                        Send(Build("mediaPlayer", "mediaPlayer.media.getRoot", new { inputId = arg2 }));
+                        Send(Build("mediaPlayer", "mediaPlayer.media.getRoot",
+                            new { inputId = arg2, collectionActions = ParseCollectionActions(arg3) }));
                     break;
 
                 case "col":
                     if (string.IsNullOrEmpty(arg2))
-                        Display.Error("Usage: mp col <mediaId> [form]");
+                        Display.Error("Usage: mp col <mediaId> [form] [collectionActions]");
                     else
                     {
-                        bool enableForm = string.Equals(arg3, "form", StringComparison.OrdinalIgnoreCase);
+                        // "form" and a collectionActions number can appear in either order after mediaId.
+                        bool enableForm = false;
+                        int? colActions = null;
+                        for (int i = 3; i < parts.Length; i++)
+                        {
+                            if (string.Equals(parts[i], "form", StringComparison.OrdinalIgnoreCase))
+                                enableForm = true;
+                            else if (int.TryParse(parts[i], out var ca))
+                                colActions = ca;
+                        }
                         Send(Build("mediaPlayer", "mediaPlayer.media.getCollection",
-                            new { mediaId = arg2, enableFormProcessing = enableForm }));
+                            new { mediaId = arg2, enableFormProcessing = enableForm, collectionActions = colActions }));
                     }
                     break;
 
@@ -516,13 +526,19 @@ namespace CasaTunes.TestClient
 
                 case "search":
                     if (string.IsNullOrEmpty(arg2) || string.IsNullOrEmpty(arg3))
-                        Display.Error("Usage: mp search <mediaId> <text>");
+                        Display.Error("Usage: mp search <mediaId> <text> [collectionActions]");
                     else
-                        Send(Build("mediaPlayer", "mediaPlayer.media.search", new { mediaId = arg2, searchText = arg3 }));
+                    {
+                        int? colActions = parts.Length > 4 ? ParseCollectionActions(parts[4]) : null;
+                        Send(Build("mediaPlayer", "mediaPlayer.media.search",
+                            new { mediaId = arg2, searchText = arg3, collectionActions = colActions }));
+                    }
                     break;
 
                 case "mplay":
-                    // mp mplay <inputId> <mediaId>  — uses playNow
+                    // mp mplay <inputId> <mediaId>  — uses playNow. mediaId may be a virtual
+                    // collectionActions/queue-choice id (e.g. playAll-<collectionId>) — the
+                    // server derives the real addToQueue for those regardless of what's sent here.
                     if (string.IsNullOrEmpty(arg2) || string.IsNullOrEmpty(arg3))
                         Display.Error("Usage: mp mplay <inputId> <mediaId>  (addToQueue defaults to playNow)");
                     else
@@ -706,6 +722,10 @@ namespace CasaTunes.TestClient
             return a + " " + b;
         }
 
+        // collectionActions is a bitmask: PlayAll=1, ShuffleAll=2, AddToQueue=4 (combine by adding, e.g. 5 = PlayAll+AddToQueue).
+        private static int? ParseCollectionActions(string arg) =>
+            int.TryParse(arg, out var value) ? value : (int?)null;
+
         private static void Send(string json)
         {
             try
@@ -734,7 +754,7 @@ namespace CasaTunes.TestClient
 
         // ── Output ───────────────────────────────────────────────────────────────
 
-        private const string Version = "1.0.2.260505";
+        private const string Version = "1.0.3.260712";
 
         private static void PrintBanner(string url)
         {
@@ -807,12 +827,17 @@ namespace CasaTunes.TestClient
             Console.WriteLine("  mp queue save  <inputId> <name>  mediaPlayer.queue.save");
             Console.WriteLine("  mp queue play  <inputId> <idx>   mediaPlayer.queue.playItem");
             Console.WriteLine("  mp queue del   <inputId> <idx>   mediaPlayer.queue.deleteItem");
-            Console.WriteLine("  mp browse    <inputId>           mediaPlayer.media.getRoot");
-            Console.WriteLine("  mp col       <mediaId> [form]    mediaPlayer.media.getCollection");
+            Console.WriteLine("  mp browse <inputId> [actions]    mediaPlayer.media.getRoot");
+            Console.WriteLine("  mp col <mediaId> [form] [actions]  mediaPlayer.media.getCollection");
             Console.WriteLine("               Append 'form' to enable form processing (default: off).");
             Console.WriteLine("               Without 'form', login prompts appear as info items.");
-            Console.WriteLine("  mp search    <mediaId> <text>    mediaPlayer.media.search");
+            Console.WriteLine("  mp search <mediaId> <text> [actions]  mediaPlayer.media.search");
+            Console.WriteLine("               [actions] = collectionActions bitmask: PlayAll=1, ShuffleAll=2, AddToQueue=4");
+            Console.WriteLine("               (combine by adding, e.g. 5 = PlayAll+AddToQueue). Inserts the");
+            Console.WriteLine("               corresponding virtual items into the collection.");
             Console.WriteLine("  mp mplay     <inputId> <mediaId> mediaPlayer.media.play (playNow)");
+            Console.WriteLine("               mediaId may be a virtual id from collectionActions");
+            Console.WriteLine("               (e.g. playAll-<collectionId>).");
             Console.WriteLine("  mp refresh   <mediaId>           mediaPlayer.media.refresh");
             Console.WriteLine("  mp delete    <mediaId>           mediaPlayer.media.delete");
             Console.WriteLine("  mp rename    <mediaId> <name>    mediaPlayer.media.rename");

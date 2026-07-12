@@ -162,14 +162,33 @@ Rules for a real client implementation:
 
 | Command | Protocol method |
 |---------|----------------|
-| `mp browse <inputId>` | `mediaPlayer.media.getRoot` — browse root for an input |
-| `mp col <mediaId> [form]` | `mediaPlayer.media.getCollection` — open a collection by ID. Append `form` to enable form processing; without it, login prompts appear as informational items. |
-| `mp search <mediaId> <text>` | `mediaPlayer.media.search` — search within a collection |
-| `mp mplay <inputId> <mediaId>` | `mediaPlayer.media.play` (addToQueue: playNow) |
+| `mp browse <inputId> [actions]` | `mediaPlayer.media.getRoot` — browse root for an input |
+| `mp col <mediaId> [form] [actions]` | `mediaPlayer.media.getCollection` — open a collection by ID. Append `form` to enable form processing (without it, login prompts appear as informational items) and/or `actions` (see below). The two are order-independent. |
+| `mp search <mediaId> <text> [actions]` | `mediaPlayer.media.search` — search within a collection |
+| `mp mplay <inputId> <mediaId>` | `mediaPlayer.media.play` (addToQueue: playNow). `mediaId` may be a virtual id returned via `collectionActions` (e.g. `playAll-<collectionId>`) — the server derives the real action for those regardless of what's sent here. |
 | `mp refresh <mediaId>` | `mediaPlayer.media.refresh` — trigger async server-side refresh |
 | `mp delete <mediaId>` | `mediaPlayer.media.delete` — delete a media item or collection |
 | `mp rename <mediaId> <name>` | `mediaPlayer.media.rename` — rename a media item or collection |
 | `mp setfeatured <mediaId> on\|off` | `mediaPlayer.media.setFeatured` — bookmark or un-bookmark an item |
+
+##### Collection actions (`[actions]`)
+
+`browse`, `col`, and `search` accept an optional `collectionActions` bitmask that inserts ready-made entries into the returned collection instead of requiring separate client-side affordances:
+
+| Bit | Value | Effect |
+|-----|-------|--------|
+| Play All     | `1` | Inserts a "Play All" item (if the collection's `canPlay` is `true`). |
+| Shuffle All   | `2` | Inserts a "Shuffle All" item (if `canPlay` is `true`). |
+| Add To Queue  | `4` | Inserts an "Add All To Queue" item (if `canAddToQueue` is `true`). If **both** this bit and Play All (`1`) are set, individually queueable items in the collection also become browsable — selecting one shows a "Play Now" / "Add To Queue" choice. |
+
+Combine bits by adding them (e.g. `5` = Play All + Add To Queue). Omit for none. Selecting any of these inserted items via `mp mplay` just works — you don't need to know or pass `addToQueue` for them; the server figures out the right action from the id.
+
+Examples:
+```
+mp browse 1 7          # root collection with all three actions
+mp col abc123 5        # open a collection, Play All + Add To Queue (no Shuffle)
+mp search abc123 "jazz" 1   # search with just Play All
+```
 
 #### Forms
 

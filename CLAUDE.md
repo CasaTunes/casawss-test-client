@@ -54,6 +54,16 @@ All messages sent to the server use:
 ```
 Namespaces: `core`, `server`, `avSwitch`, `mediaPlayer`
 
+### Protocol v1.9.0–v1.12.0 changes — media browsing (2026-07-08 to 2026-07-12)
+
+- **`collectionActions`** — optional argument on `mediaPlayer.media.getRoot`, `mediaPlayer.media.getCollection`, and `mediaPlayer.media.search` that inserts ready-made "Play All" / "Shuffle All" / "Add All To Queue" items into the returned collection. As of **v1.12.0** it's a numeric bitmask (`PlayAll=1`, `ShuffleAll=2`, `AddToQueue=4`, combine by adding) — it was previously a string enum (`None`/`PlayOnly`/`PlayShuffleOnly`/`All`) in v1.9.0–v1.11.0, which no longer works.
+- When both the `PlayAll` and `AddToQueue` bits are set, individually queueable MediaItems in the collection also become browsable (a "queue choice") — selecting one returns a small collection with "Play Now" and "Add To Queue" items.
+- Items inserted or transformed by `collectionActions` use synthetic `mediaId`s (e.g. `playAll-<collectionId>`, `queueChoice-<mediaId>`), but the client never needs to parse or know this — treat them as opaque `mediaId`s and select them normally via `mediaPlayer.media.play`. As of v1.11.0, `addToQueue` is not required (and is ignored if sent) when playing one of these — the server derives the correct value itself.
+- **MediaItem** gained `canPlay`/`canAdd` booleans (v1.10.0). `canAdd` (v1.11.0) reflects queue-type compatibility with whatever is currently playing, not just the item's own flag.
+- `mediaPlayer.media.getCollection` returns a placeholder "No items found" Collection (a single non-playable MediaItem) instead of an empty/missing result when the underlying collection can't be found or has no items (v1.9.0).
+- MediaItem `title` now falls back to the first `displayInfo` entry when the item has no title of its own, e.g. some station-type items (v1.11.0).
+- Test client: `mp browse`/`mp col`/`mp search` all take an optional `collectionActions` bitmask argument; `mp col` accepts `form` and/or the bitmask in either order.
+
 ### Protocol v1.6.0 changes (2026-05-05)
 
 - **Zone objects** (`avSwitch.zone.getAll`, `avSwitch.zone.get`, `avSwitch.changed`) now include `"sleepEnabled": bool` — `true` when a sleep timer is active for that zone.
