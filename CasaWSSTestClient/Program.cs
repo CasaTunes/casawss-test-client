@@ -474,21 +474,26 @@ namespace CasaTunes.TestClient
 
                 case "col":
                     if (string.IsNullOrEmpty(arg2))
-                        Display.Error("Usage: mp col <mediaId> [form] [collectionActions]");
+                        Display.Error("Usage: mp col <mediaId> [form] [collectionActions] [in:<inputId>]");
                     else
                     {
-                        // "form" and a collectionActions number can appear in either order after mediaId.
+                        // "form", a collectionActions number, and "in:<inputId>" can appear in any order after mediaId.
                         bool enableForm = false;
                         int? colActions = null;
+                        string colInputId = null;
                         for (int i = 3; i < parts.Length; i++)
                         {
                             if (string.Equals(parts[i], "form", StringComparison.OrdinalIgnoreCase))
                                 enableForm = true;
+                            else if (parts[i].StartsWith("in:", StringComparison.OrdinalIgnoreCase))
+                                colInputId = parts[i].Substring(3);
                             else if (int.TryParse(parts[i], out var ca))
                                 colActions = ca;
                         }
+                        // inputId lets the server compute canAddToQueue against what's currently
+                        // playing on that input — omitting it makes canAddToQueue always false.
                         Send(Build("mediaPlayer", "mediaPlayer.media.getCollection",
-                            new { mediaId = arg2, enableFormProcessing = enableForm, collectionActions = colActions }));
+                            new { mediaId = arg2, inputId = colInputId, enableFormProcessing = enableForm, collectionActions = colActions }));
                     }
                     break;
 
@@ -526,12 +531,23 @@ namespace CasaTunes.TestClient
 
                 case "search":
                     if (string.IsNullOrEmpty(arg2) || string.IsNullOrEmpty(arg3))
-                        Display.Error("Usage: mp search <mediaId> <text> [collectionActions]");
+                        Display.Error("Usage: mp search <mediaId> <text> [collectionActions] [in:<inputId>]");
                     else
                     {
-                        int? colActions = parts.Length > 4 ? ParseCollectionActions(parts[4]) : null;
+                        // a collectionActions number and "in:<inputId>" can appear in either order after <text>.
+                        int? colActions = null;
+                        string searchInputId = null;
+                        for (int i = 4; i < parts.Length; i++)
+                        {
+                            if (parts[i].StartsWith("in:", StringComparison.OrdinalIgnoreCase))
+                                searchInputId = parts[i].Substring(3);
+                            else if (int.TryParse(parts[i], out var ca))
+                                colActions = ca;
+                        }
+                        // inputId lets the server compute canAddToQueue against what's currently
+                        // playing on that input — omitting it makes canAddToQueue always false.
                         Send(Build("mediaPlayer", "mediaPlayer.media.search",
-                            new { mediaId = arg2, searchText = arg3, collectionActions = colActions }));
+                            new { mediaId = arg2, searchText = arg3, inputId = searchInputId, collectionActions = colActions }));
                     }
                     break;
 
@@ -828,13 +844,15 @@ namespace CasaTunes.TestClient
             Console.WriteLine("  mp queue play  <inputId> <idx>   mediaPlayer.queue.playItem");
             Console.WriteLine("  mp queue del   <inputId> <idx>   mediaPlayer.queue.deleteItem");
             Console.WriteLine("  mp browse <inputId> [actions]    mediaPlayer.media.getRoot");
-            Console.WriteLine("  mp col <mediaId> [form] [actions]  mediaPlayer.media.getCollection");
+            Console.WriteLine("  mp col <mediaId> [form] [actions] [in:<inputId>]  mediaPlayer.media.getCollection");
             Console.WriteLine("               Append 'form' to enable form processing (default: off).");
             Console.WriteLine("               Without 'form', login prompts appear as info items.");
-            Console.WriteLine("  mp search <mediaId> <text> [actions]  mediaPlayer.media.search");
+            Console.WriteLine("  mp search <mediaId> <text> [actions] [in:<inputId>]  mediaPlayer.media.search");
             Console.WriteLine("               [actions] = collectionActions bitmask: PlayAll=1, ShuffleAll=2, AddToQueue=4");
             Console.WriteLine("               (combine by adding, e.g. 5 = PlayAll+AddToQueue). Inserts the");
             Console.WriteLine("               corresponding virtual items into the collection.");
+            Console.WriteLine("               in:<inputId> = input currently in use; required for canAddToQueue");
+            Console.WriteLine("               to reflect anything other than false.");
             Console.WriteLine("  mp mplay     <inputId> <mediaId> mediaPlayer.media.play (playNow)");
             Console.WriteLine("               mediaId may be a virtual id from collectionActions");
             Console.WriteLine("               (e.g. playAll-<collectionId>).");

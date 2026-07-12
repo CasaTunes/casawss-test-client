@@ -163,8 +163,8 @@ Rules for a real client implementation:
 | Command | Protocol method |
 |---------|----------------|
 | `mp browse <inputId> [actions]` | `mediaPlayer.media.getRoot` — browse root for an input |
-| `mp col <mediaId> [form] [actions]` | `mediaPlayer.media.getCollection` — open a collection by ID. Append `form` to enable form processing (without it, login prompts appear as informational items) and/or `actions` (see below). The two are order-independent. |
-| `mp search <mediaId> <text> [actions]` | `mediaPlayer.media.search` — search within a collection |
+| `mp col <mediaId> [form] [actions] [in:<inputId>]` | `mediaPlayer.media.getCollection` — open a collection by ID. Append `form` to enable form processing (without it, login prompts appear as informational items), `actions` (see below), and/or `in:<inputId>`. All three are order-independent. |
+| `mp search <mediaId> <text> [actions] [in:<inputId>]` | `mediaPlayer.media.search` — search within a collection |
 | `mp mplay <inputId> <mediaId>` | `mediaPlayer.media.play` (addToQueue: playNow). `mediaId` may be a virtual id returned via `collectionActions` (e.g. `playAll-<collectionId>`) — the server derives the real action for those regardless of what's sent here. |
 | `mp refresh <mediaId>` | `mediaPlayer.media.refresh` — trigger async server-side refresh |
 | `mp delete <mediaId>` | `mediaPlayer.media.delete` — delete a media item or collection |
@@ -183,11 +183,13 @@ Rules for a real client implementation:
 
 Combine bits by adding them (e.g. `5` = Play All + Add To Queue). Omit for none. Selecting any of these inserted items via `mp mplay` just works — you don't need to know or pass `addToQueue` for them; the server figures out the right action from the id.
 
+`canAddToQueue` on the returned collection (and thus whether the Add To Queue bit actually inserts anything) requires `inputId` to be passed to `col`/`search` — without it the server always reports `canAddToQueue: false`. `browse`/`getRoot` doesn't have this issue since `inputId` is already a required argument there.
+
 Examples:
 ```
 mp browse 1 7          # root collection with all three actions
-mp col abc123 5        # open a collection, Play All + Add To Queue (no Shuffle)
-mp search abc123 "jazz" 1   # search with just Play All
+mp col abc123 5 in:1    # open a collection, Play All + Add To Queue (no Shuffle), scoped to input 1
+mp search abc123 "jazz" 1 in:1   # search with just Play All, scoped to input 1
 ```
 
 #### Forms
